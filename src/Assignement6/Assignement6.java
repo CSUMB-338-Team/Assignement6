@@ -1,10 +1,24 @@
 package Assignement6;
 
+import java.awt.BorderLayout;
+import java.awt.Cursor;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
+import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 public class Assignement6
 {
@@ -26,6 +40,10 @@ public class Assignement6
             numUnusedCardsPerPack, unusedCardsPerPack, 
             numOfPlayers, cardsPerHand);
       
+      GameModel model = new GameModel(highCardGame, "Computer", "Player");
+      GameView view = new GameView();
+      
+      GameControl game = new GameControl(model, view);
 
    }
 
@@ -169,6 +187,163 @@ class GameModel
  * end of GameModel
  *---------------------------------------------------- */
 
+/*------------------------------------------------------
+ * class GameController
+ *---------------------------------------------------- */
+
+class GameControl
+{
+   GameModel model;
+   GameView view;
+
+   public GameControl()
+   {
+      this.model = null;
+      this.view = null;
+   }
+   
+   public GameControl(GameModel model, GameView view)
+   {
+      this.model = model;
+      this.view = view;
+      this.view.endActionListener(new EndControlListener());
+   }
+   
+   
+   /* action listeners from control */
+   
+   // end game action listener
+   private class EndControlListener implements ActionListener
+   {
+      
+      @Override
+      public void actionPerformed(ActionEvent e)
+      {
+         System.exit(0);
+      }
+      
+   }
+   
+   // Stop Timer Listener
+   private class StopTimerControlListener implements ActionListener
+   {
+      
+      @Override
+      public void actionPerformed(ActionEvent e)
+      {
+         System.exit(0);
+      }
+      
+   }
+}
+
+/*------------------------------------------------------
+ * end of GameController
+ *---------------------------------------------------- */
+
+/*------------------------------------------------------
+ * class GameView
+ *---------------------------------------------------- */
+
+class GameView extends JFrame
+{
+
+   // panel titles
+   private static String[] pnlTitles = {"BUILD", 
+      "Computer Hand", "Player Hand", "Playing Area", "Controlls"};
+   
+   // GUI buttons
+   private JButton endGameBtn, playAgainBtn, nextRoundBtn, stopBtn, startBtn;
+   private ArrayList<JButton> playersCardsBtns = new ArrayList<JButton>();
+   
+   // main panels
+   private JPanel pnlCpuHand, pnlHumanHand, pnlPlayArea, pnlCntrols;
+   
+   // sub pannels
+   private JPanel pnlTimer, pnlOutput;
+   
+   // default constructor
+   // sets up the initial view, which is really
+   // the table and it's main holders
+   public GameView()
+   {
+      super();
+      setTitle(pnlTitles[0]);
+      setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+      setLayout(new BorderLayout());
+      
+      // control panel
+      pnlTimer = new JPanel();
+      endGameBtn = new JButton("End Game");
+      startBtn = new JButton("Start");
+      stopBtn = new JButton("Stop");
+      pnlCntrols = new JPanel(new GridLayout(4, 1));
+      pnlCntrols.setBorder(
+            BorderFactory.createTitledBorder(pnlTitles[4]));
+      pnlCntrols.add(pnlTimer);
+      pnlCntrols.add(startBtn);
+      pnlCntrols.add(stopBtn);
+      pnlCntrols.add(endGameBtn);
+      
+      // play Area
+      pnlPlayArea = new JPanel(new GridLayout(2, 2));
+      pnlPlayArea.setBorder(
+            BorderFactory.createTitledBorder(pnlTitles[3]));
+      
+      //computers hand
+      pnlCpuHand = new JPanel(new GridLayout(1, 7));
+      pnlCpuHand.setBorder(
+            BorderFactory.createTitledBorder(pnlTitles[1]));
+      
+      //human hand
+      pnlHumanHand = new JPanel(new GridLayout(1, 7));
+      pnlHumanHand.setBorder(
+            BorderFactory.createTitledBorder(pnlTitles[2]));
+      
+
+      // add all the major components to the screen
+      this.add(pnlCntrols, BorderLayout.EAST);
+      this.add(pnlCpuHand, BorderLayout.NORTH);
+      this.add(pnlPlayArea, BorderLayout.CENTER);
+      this.add(pnlHumanHand, BorderLayout.SOUTH);
+      this.setSize(800, 600);
+      this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+      this.setVisible(true);
+   }
+   
+   /*
+    * private helper method to repaint the UI
+    * */
+   public void clearUI()
+   {
+//      pnlCpuHand.removeAll();
+//      pnlCpuCardPlayed.removeAll();
+//      pnlHumanHand.removeAll();
+//      pnlHumanCardPlayed.removeAll();
+//      pnlOutput.removeAll();
+//      this.getContentPane().repaint();
+   }
+   
+   /*
+    * private helper method to repaint the UI
+    * */
+   public void rePaintUI()
+   {
+      this.getContentPane().validate();
+      this.getContentPane().repaint();
+   }
+   
+   public void endActionListener(ActionListener l)
+   {
+      endGameBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+      endGameBtn.addActionListener(l);
+   }
+
+}
+
+/*------------------------------------------------------
+ * end of GameView
+ *---------------------------------------------------- */
 
 /*------------------------------------------------------
  * GUICard

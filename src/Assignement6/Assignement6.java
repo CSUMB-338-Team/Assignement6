@@ -2,8 +2,6 @@ package Assignement6;
 
 import java.awt.BorderLayout;
 import java.awt.Cursor;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -19,6 +17,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+
 
 public class Assignement6
 {
@@ -95,14 +94,40 @@ class GameModel
       humanPlayedCard = null;
    }
    
+   public Card playCard(int playerIndex, int cardIndex)
+   {
+      return highCardGame.playCard(playerIndex, cardIndex);
+   }
+   
+   public boolean takeNewCard(int playerIndex, int cardIndex)
+   {
+      return highCardGame.takeCard(playerIndex, cardIndex);
+   }
+   
    public void resetGame()
    {
+   }
+   
+   public void dealSingleCard(Hand hand)
+   {
+      Card card = highCardGame.getCardFromDeck();
+      hand.takeCard(card);
    }
    
    public void dealCards()
    {
       highCardGame.deal();
       highCardGame.sortHands();
+   }
+   
+   public Hand getLeftPlayedStack()
+   {
+      return leftStack;
+   }
+   
+   public Hand getRightPlayedStack()
+   {
+      return rightStack;
    }
    
    public Hand getCpuHand()
@@ -205,48 +230,168 @@ class GameControl
 {
    GameModel model;
    GameView view;
+   int noPlayRounds;
 
    public GameControl()
    {
       this.model = null;
       this.view = null;
+      noPlayRounds = 0;
    }
    
    public GameControl(GameModel model, GameView view)
    {
       this.model = model;
       this.view = view;
+      noPlayRounds = 0;
       this.view.endActionListener(new EndControlListener());
+      this.view.cantPlayListener(new CantPlayListener());
       
-      String[] options = {"Flip"};
-      String message = "";
-      int firstPlayer;
-      
-      this.view.showOptionDialog(
-            "Get Ready to Play!",
-            "Flip a Coin to Start the Game:", 
-            options);
-      
-      firstPlayer = flipCoin();
-      this.model.setFirstPlayer(firstPlayer);
-      
-      message = (firstPlayer == 0) ? this.model.getCpuName() : 
-         this.model.getHumanName();
-      message += " goes first!";
-         
-      this.view.showMessageg("First Player", message);
-      
+      // deal cards to players as well
+      // as well as two cards center to start
       this.model.dealCards();
+      placeNewCardsCenter();
+      playersTurn();
+      
+      this.view.showMessageg("First Player", 
+            "You get to play first.\nSelect a card that is either " +
+            "one lower or one higher than one of the visible " +
+            "cards.\nIf you can't play press the \"Can't Play\" button.");
+   }
+   
+   private void gameOver()
+   {
+      int playerScore = model.getHumanCantPlay();
+      int cpuScore = model.getCpuCantPlay();
+      String message = "Game over.\n";
+      
+      message += "Player couldn't play " + playerScore + " times.\n";
+      message += "CPU couldn't play " + cpuScore + " times.\n";
+      
+      if(playerScore < cpuScore)
+         message += "You won!\n";
+      else if(playerScore == cpuScore)
+         message += "It was a tie!\n";
+      else
+         message += "Sorry, you lost.\n";
+      
+      view.showMessageg("Game Over", message);
+      
+      System.exit(0);
+   }
+   
+   private void cpuTurn()
+   {
+      if(noPlayRounds == 2)
+      {
+         placeNewCardsCenter();
+         view.showMessageg("2 Rounds of no play", 
+               "2 Rounds of no play. New cards are now visible");
+      }
+      
+      view.updateForCpuTurn(model.getCpuHand(), 
+            model.getHumanHand(), model.getNumCardsPerHand());
+      
+      cpuPlay();
+   }
+   
+   private void playersTurn()
+   {
+
+      if(noPlayRounds == 2)
+      {
+         placeNewCardsCenter();
+         view.showMessageg("2 Rounds of no play", 
+               "2 Rounds of no play. New cards are now visible");
+      }
+      
+      view.updateForPlayersTurn(model.getCpuHand(), 
+            model.getHumanHand(), model.getNumCardsPerHand());
+      
+      for(int i = 0; i < model.getHumanHand().getNumCards(); i++)
+         view.playersCardActionListener(i, new PlayCardControlListener(i));
+  
+   }
+   
+   private void placeNewCardsCenter()
+   {
+     
+      noPlayRounds = 0;
+      
+      Hand left = model.getLeftPlayedStack();
+      Hand right = model.getRightPlayedStack();
+      
+      model.dealSingleCard(left);
+      model.dealSingleCard(right);
+      
+      view.updatePlayedStacks(model.getLeftPlayedStack(), 
+            model.getRightPlayedStack());
+   }
+   
+   private Hand evaluatePlay(Card toEvaluate)
+   {
+      Hand lHand = model.getLeftPlayedStack();
+      Hand rHand = model.getRightPlayedStack();
+      
+      Card lCard = lHand.inspectCard(lHand.getNumCards() - 1);
+      Card rCard = rHand.inspectCard(rHand.getNumCards() - 1);
+      
+      int pCardValue = GUICard.valueAsInt(toEvaluate.getValue());
+      int lCardValue = GUICard.valueAsInt(lCard.getValue());
+      int rCardValue = GUICard.valueAsInt(rCard.getValue());
+      
+      if(pCardValue == lCardValue + 1 || pCardValue == lCardValue - 1)
+      {
+         return lHand;
+      }
+      else if(pCardValue == rCardValue + 1 || pCardValue == rCardValue - 1)
+      {
+         return rHand;
+      }
+      
+      return null;
+   }
+   
+   private void cpuPlay()
+   {
+      Hand cHand = model.getCpuHand();
+      Hand handToPlayOn = null;
+      Card cardToPlay = null;
+      boolean cardsLeftInDeck = true;
+      
+      for(int i = 0; i < cHand.getNumCards(); i++)
+      {
+         cardToPlay = cHand.inspectCard(i);
+         handToPlayOn = evaluatePlay(cardToPlay);
+         
+         if(handToPlayOn != null)
+         {
+            noPlayRounds = 0;
+            cardToPlay = model.playCard(0, i);
+            handToPlayOn.takeCard(cardToPlay);
+            cardsLeftInDeck = model.takeNewCard(0, i);
+            view.updatePlayedStacks(model.getLeftPlayedStack(), 
+                  model.getRightPlayedStack());
+            break;
+         }
+     
+      }
+      
+      if(handToPlayOn == null)
+      {
+         view.showMessageg("Nothing to Play", 
+               "The CPU couldn't play. You get to try again.");
+         model.setCpuCantPlay();
+         noPlayRounds++;
+      }
+      
+      if(cardsLeftInDeck)
+         playersTurn();
+      else
+         gameOver();
       
    }
    
-   /*
-    * Mimmicks flipping a coin
-    * */
-   private int flipCoin()
-   { 
-      return (int)(Math.random() * (2 - 0)); 
-   }
    
    /* action listeners from control */
    
@@ -270,6 +415,67 @@ class GameControl
       public void actionPerformed(ActionEvent e)
       {
          System.exit(0);
+      }
+      
+   }
+   
+   private class CantPlayListener implements ActionListener
+   {
+      
+      @Override
+      public void actionPerformed(ActionEvent e)
+      {
+         noPlayRounds++;
+         model.setHumanCantPlay();
+         cpuTurn();
+      }
+      
+   }
+   
+   private class PlayCardControlListener implements ActionListener
+   {
+      
+      int index;
+      String errorMessage;
+      
+      public PlayCardControlListener(int index)
+      {
+         this.index = index;
+         this.errorMessage = "You can not play that card.";
+      }
+      
+      @Override
+      public void actionPerformed(ActionEvent e)
+      {
+         Hand pHand = model.getHumanHand();
+         Hand handToPlayOn;
+         Card pCard = pHand.inspectCard(index);
+         Card cardToPlay;
+         boolean cardsLeftInDeck = true;
+         
+         handToPlayOn = evaluatePlay(pCard);
+         
+         if(handToPlayOn == null)
+         {
+            errorMessage();
+         }else{
+            noPlayRounds = 0;
+            cardToPlay = model.playCard(1, index);
+            handToPlayOn.takeCard(cardToPlay);
+            cardsLeftInDeck = model.takeNewCard(1, index);
+            view.updatePlayedStacks(model.getLeftPlayedStack(), 
+                  model.getRightPlayedStack());
+            
+            if(cardsLeftInDeck)
+               cpuTurn();
+            else
+               gameOver();
+         }
+      }
+      
+      private void errorMessage()
+      {
+         view.showMessageg("Error", errorMessage);
       }
       
    }
@@ -311,23 +517,23 @@ class GameView extends JFrame
       setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
       setLayout(new BorderLayout());
       
+      cantPlayBtn = new JButton("Can't Play");
+      
       // control panel
       pnlTimer = new JPanel();
       endGameBtn = new JButton("End Game");
       startBtn = new JButton("Start Timer");
       stopBtn = new JButton("Stop Timer");
-      cantPlayBtn = new JButton("Can't Play");
-      pnlCntrols = new JPanel(new GridLayout(5, 1));
+      pnlCntrols = new JPanel(new GridLayout(4, 1));
       pnlCntrols.setBorder(
             BorderFactory.createTitledBorder(pnlTitles[4]));
       pnlCntrols.add(pnlTimer);
       pnlCntrols.add(startBtn);
       pnlCntrols.add(stopBtn);
-      pnlCntrols.add(cantPlayBtn);
       pnlCntrols.add(endGameBtn);
       
       // play Area
-      pnlPlayArea = new JPanel(new GridLayout(2, 2));
+      pnlPlayArea = new JPanel(new GridLayout(1, 2));
       pnlPlayArea.setBorder(
             BorderFactory.createTitledBorder(pnlTitles[3]));
       
@@ -352,38 +558,96 @@ class GameView extends JFrame
       this.setVisible(true);
    }
    
-   public void initPlayingBoard()
+   public void updatePlayedStacks(Hand leftStack, Hand rightStack)
    {
       
+      pnlPlayArea.removeAll();
+      Card leftCard = leftStack.inspectCard(leftStack.getNumCards() - 1);
+      Card rightCard = rightStack.inspectCard(rightStack.getNumCards() - 1);
       
+      JLabel left = new JLabel(GUICard.getIcon(leftCard));
+      JLabel right = new JLabel(GUICard.getIcon(rightCard));
+      pnlPlayArea.add(left);
+      pnlPlayArea.add(right);
+      rePaintUI();
+   }
+   
+   public void updateForCpuTurn(Hand cpuHand, Hand humanHand, int maxHandSize)
+   {
+      pnlCpuHand.removeAll();
+      pnlHumanHand.removeAll();
+      addCpuHand(cpuHand, maxHandSize);
+      addHumanHand(humanHand, maxHandSize);
+      rePaintUI();
+   }
+   
+   public void updateForPlayersTurn(Hand cpuHand, Hand humanHand, 
+         int maxHandSize)
+   {
+      pnlCpuHand.removeAll();
+      pnlHumanHand.removeAll();
+      addCpuHand(cpuHand, maxHandSize);
+      addHumanHandAsButtons(humanHand, maxHandSize);
+      rePaintUI();
+   }
+   
+   private void addCpuHand(Hand hand, int maxHandSize)
+   {  
+      
+      for(int k = 0; k < maxHandSize; k++)
+      {
+         if(k > hand.getNumCards() - 1)
+            pnlCpuHand.add(new JLabel(GUICard.getBlankCardIcon()));
+         else
+            pnlCpuHand.add(new JLabel(GUICard.getBackCardIcon()));
+      }
+      
+   }
+   
+   private void addHumanHand(Hand hand, int maxHandSize)
+   {
+      
+      for(int k = 0; k < maxHandSize; k++)
+      {
+         if(k > hand.getNumCards() - 1)
+            pnlHumanHand.add(new JLabel(GUICard.getBlankCardIcon()));
+         else
+            pnlHumanHand.add(new JLabel(GUICard
+                  .getIcon(hand.inspectCard(k))));
+      }
+   }
+   
+   private void addHumanHandAsButtons(Hand hand, int maxHandSize)
+   {     
+      playersCardsBtns.clear();
+      pnlHumanHand.setLayout(new GridLayout(1, 8));
+      for(int k = 0; k < maxHandSize; k++)
+      {
+         if(k > hand.getNumCards() - 1)
+         {
+            pnlHumanHand.add(new JLabel(GUICard.getBlankCardIcon()));  
+         }
+         else
+         {
+            JButton playCardBtn = new JButton(
+                  GUICard.getIcon(hand.inspectCard(k)));
+            playCardBtn.setBorder(BorderFactory.createEmptyBorder());
+            playersCardsBtns.add(playCardBtn);
+            
+            pnlHumanHand.add(playersCardsBtns.get(k));
+         }
+         
+         pnlHumanHand.add(cantPlayBtn);
+      }
    }
    
    /*
     * private helper method to repaint the UI
     * */
-   public void clearUI()
-   {
-//      pnlCpuHand.removeAll();
-//      pnlCpuCardPlayed.removeAll();
-//      pnlHumanHand.removeAll();
-//      pnlHumanCardPlayed.removeAll();
-//      pnlOutput.removeAll();
-//      this.getContentPane().repaint();
-   }
-   
-   /*
-    * private helper method to repaint the UI
-    * */
-   public void rePaintUI()
+   private void rePaintUI()
    {
       this.getContentPane().validate();
       this.getContentPane().repaint();
-   }
-   
-   public void endActionListener(ActionListener l)
-   {
-      endGameBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-      endGameBtn.addActionListener(l);
    }
 
    public void showMessageg(String title, String message)
@@ -408,6 +672,24 @@ class GameView extends JFrame
             options[0]);
       
       return option;
+   }
+   
+   public void endActionListener(ActionListener l)
+   {
+      endGameBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+      endGameBtn.addActionListener(l);
+   }
+   
+   public void playersCardActionListener(int index, ActionListener l)
+   {
+      playersCardsBtns.get(index).setCursor(new Cursor(Cursor.HAND_CURSOR));
+      playersCardsBtns.get(index).addActionListener(l);
+   }
+   
+   public void cantPlayListener(ActionListener l)
+   {
+      cantPlayBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+      cantPlayBtn.addActionListener(l);
    }
    
 }

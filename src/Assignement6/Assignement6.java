@@ -73,6 +73,10 @@ class GameModel
       humanName = "";
       humanPlayer = 1;
       humanCantPlay = 0;
+      leftStack = new Hand();
+      rightStack = new Hand();
+      cpuPlayedCard = null;
+      humanPlayedCard = null;
    }
    
    public GameModel(CardGameFramework highCardGame, String cpuName, 
@@ -85,6 +89,10 @@ class GameModel
       this.humanName = humanName;
       humanPlayer = 1;
       humanCantPlay = 0;
+      leftStack = new Hand();
+      rightStack = new Hand();
+      cpuPlayedCard = null;
+      humanPlayedCard = null;
    }
    
    public void resetGame()
@@ -93,6 +101,8 @@ class GameModel
    
    public void dealCards()
    {
+      highCardGame.deal();
+      highCardGame.sortHands();
    }
    
    public Hand getCpuHand()
@@ -207,8 +217,36 @@ class GameControl
       this.model = model;
       this.view = view;
       this.view.endActionListener(new EndControlListener());
+      
+      String[] options = {"Flip"};
+      String message = "";
+      int firstPlayer;
+      
+      this.view.showOptionDialog(
+            "Get Ready to Play!",
+            "Flip a Coin to Start the Game:", 
+            options);
+      
+      firstPlayer = flipCoin();
+      this.model.setFirstPlayer(firstPlayer);
+      
+      message = (firstPlayer == 0) ? this.model.getCpuName() : 
+         this.model.getHumanName();
+      message += " goes first!";
+         
+      this.view.showMessageg("First Player", message);
+      
+      this.model.dealCards();
+      
    }
    
+   /*
+    * Mimmicks flipping a coin
+    * */
+   private int flipCoin()
+   { 
+      return (int)(Math.random() * (2 - 0)); 
+   }
    
    /* action listeners from control */
    
@@ -253,7 +291,8 @@ class GameView extends JFrame
       "Computer Hand", "Player Hand", "Playing Area", "Controlls"};
    
    // GUI buttons
-   private JButton endGameBtn, playAgainBtn, nextRoundBtn, stopBtn, startBtn;
+   private JButton endGameBtn, playAgainBtn, nextRoundBtn, stopBtn, 
+   cantPlayBtn, startBtn;
    private ArrayList<JButton> playersCardsBtns = new ArrayList<JButton>();
    
    // main panels
@@ -275,14 +314,16 @@ class GameView extends JFrame
       // control panel
       pnlTimer = new JPanel();
       endGameBtn = new JButton("End Game");
-      startBtn = new JButton("Start");
-      stopBtn = new JButton("Stop");
-      pnlCntrols = new JPanel(new GridLayout(4, 1));
+      startBtn = new JButton("Start Timer");
+      stopBtn = new JButton("Stop Timer");
+      cantPlayBtn = new JButton("Can't Play");
+      pnlCntrols = new JPanel(new GridLayout(5, 1));
       pnlCntrols.setBorder(
             BorderFactory.createTitledBorder(pnlTitles[4]));
       pnlCntrols.add(pnlTimer);
       pnlCntrols.add(startBtn);
       pnlCntrols.add(stopBtn);
+      pnlCntrols.add(cantPlayBtn);
       pnlCntrols.add(endGameBtn);
       
       // play Area
@@ -309,6 +350,12 @@ class GameView extends JFrame
       this.setSize(800, 600);
       this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
       this.setVisible(true);
+   }
+   
+   public void initPlayingBoard()
+   {
+      
+      
    }
    
    /*
@@ -339,6 +386,30 @@ class GameView extends JFrame
       endGameBtn.addActionListener(l);
    }
 
+   public void showMessageg(String title, String message)
+   {  
+      JOptionPane.showMessageDialog(
+            this,
+            message,
+            title,
+            JOptionPane.PLAIN_MESSAGE);
+   }
+   
+   public int showOptionDialog(String title, String message, String[] options)
+   {  
+      int option = JOptionPane.showOptionDialog(
+            this, 
+            message,
+            title, 
+            JOptionPane.YES_NO_CANCEL_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]);
+      
+      return option;
+   }
+   
 }
 
 /*------------------------------------------------------

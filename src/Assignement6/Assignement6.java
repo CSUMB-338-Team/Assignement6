@@ -100,19 +100,27 @@ class ClockTimer extends JLabel
       {
          while(true){
             
-            long currentTime = System.currentTimeMillis();
-            
-            while(pauseTimer){
-               doNothing(1);
-            }
-            
-            long time = currentTime - start ;
+            long currentTime = timerPaused();
+                        
+            long time = currentTime - start;
             long sec = time / 1000 ;
             long min = sec / 60;
             sec = sec % 60;
             text = String.format("%02d:%02d", min , sec );
             addText(text);
          }
+      }
+      
+      public long timerPaused()
+      {
+         // cache the time
+         long time = System.currentTimeMillis();
+         
+         while(pauseTimer){
+            doNothing(1);
+         }
+         
+         return time;
       }
       
       public void toggleTimer()

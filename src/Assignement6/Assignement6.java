@@ -19,6 +19,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 
+
 public class Assignement6
 {
 
@@ -39,8 +40,11 @@ public class Assignement6
             numUnusedCardsPerPack, unusedCardsPerPack, 
             numOfPlayers, cardsPerHand);
       
+      ClockTimer timer = new ClockTimer();
+      timer.startTimer();
+      
       GameModel model = new GameModel(highCardGame, "Computer", "Player");
-      GameView view = new GameView();
+      GameView view = new GameView(timer);
       
       GameControl game = new GameControl(model, view);
 
@@ -48,6 +52,93 @@ public class Assignement6
 
 }
 
+
+/*------------------------------------------------------
+ * Timer
+ *---------------------------------------------------- */
+class ClockTimer extends JLabel
+{
+   private StopWatch stopWatch;
+   private static final long serialVersionUID = 1L;
+   private String text;
+   
+   public ClockTimer()
+   {
+      text = "";
+      stopWatch = null;
+   }
+   
+   public void startTimer()
+   {
+      stopWatch = new StopWatch();
+      Thread t = new Thread(stopWatch);
+      t.start();
+   }
+   
+   public void addText(String text) 
+   {
+      this.setText(text);
+   }
+   
+   public void toggleTimer() 
+   {
+      stopWatch.toggleTimer();
+   }
+   
+   private class StopWatch extends Thread
+   {
+      private long start = System.currentTimeMillis();
+      private boolean pauseTimer;
+      
+      public StopWatch()
+      {
+         pauseTimer = false;
+      }
+      
+      @Override
+      public void run() 
+      {
+         while(true){
+            
+            long currentTime = System.currentTimeMillis();
+            
+            while(pauseTimer){
+               doNothing(1);
+            }
+            
+            long time = currentTime - start ;
+            long sec = time / 1000 ;
+            long min = sec / 60;
+            sec = sec % 60;
+            text = String.format("%02d:%02d", min , sec );
+            addText(text);
+         }
+      }
+      
+      public void toggleTimer()
+      {
+         pauseTimer = !pauseTimer;
+      }
+      
+      public void doNothing(int millis)
+      {
+         try
+         {
+            Thread.sleep(millis);
+         }
+         catch(InterruptedException e)
+         {
+            System.out.println("Unexpected Interuption");
+            System.exit(0);
+         }
+      }
+      
+    } 
+}
+
+/*------------------------------------------------------
+ * end Timer
+ *---------------------------------------------------- */
 
 /*------------------------------------------------------
  * class GameModel
@@ -246,6 +337,7 @@ class GameControl
       noPlayRounds = 0;
       this.view.endActionListener(new EndControlListener());
       this.view.cantPlayListener(new CantPlayListener());
+      this.view.toggleTimerListener(new ToggleTimerListener());
       
       // deal cards to players as well
       // as well as two cards center to start
@@ -408,13 +500,30 @@ class GameControl
    }
    
    // Stop Timer Listener
-   private class StopTimerControlListener implements ActionListener
+   private class ToggleTimerListener implements ActionListener
    {
+      private boolean playing;
+      private ClockTimer timer;
+      
+      public ToggleTimerListener()
+      {
+         playing = true;
+         timer = view.getTimer();
+      }
       
       @Override
       public void actionPerformed(ActionEvent e)
       {
-         System.exit(0);
+         if(playing)
+         {
+            playing = false;
+            view.setTimerButtonText("Start Timer");
+         }
+         else{
+            playing = true;
+            view.setTimerButtonText("Stop Timer");
+         }
+         timer.toggleTimer();
       }
       
    }
@@ -492,13 +601,14 @@ class GameControl
 class GameView extends JFrame
 {
 
+   private ClockTimer timer;
+   
    // panel titles
    private static String[] pnlTitles = {"BUILD", 
       "Computer Hand", "Player Hand", "Playing Area", "Controlls"};
    
    // GUI buttons
-   private JButton endGameBtn, playAgainBtn, nextRoundBtn, stopBtn, 
-   cantPlayBtn, startBtn;
+   private JButton endGameBtn,toggleTimerBtn, cantPlayBtn;
    private ArrayList<JButton> playersCardsBtns = new ArrayList<JButton>();
    
    // main panels
@@ -510,26 +620,26 @@ class GameView extends JFrame
    // default constructor
    // sets up the initial view, which is really
    // the table and it's main holders
-   public GameView()
+   public GameView(ClockTimer timer)
    {
       super();
       setTitle(pnlTitles[0]);
       setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
       setLayout(new BorderLayout());
       
+      this.timer = timer;
       cantPlayBtn = new JButton("Can't Play");
       
       // control panel
       pnlTimer = new JPanel();
+      pnlTimer.add(this.timer);
       endGameBtn = new JButton("End Game");
-      startBtn = new JButton("Start Timer");
-      stopBtn = new JButton("Stop Timer");
-      pnlCntrols = new JPanel(new GridLayout(4, 1));
+      toggleTimerBtn = new JButton("Stop Timer");
+      pnlCntrols = new JPanel(new GridLayout(3, 1));
       pnlCntrols.setBorder(
             BorderFactory.createTitledBorder(pnlTitles[4]));
       pnlCntrols.add(pnlTimer);
-      pnlCntrols.add(startBtn);
-      pnlCntrols.add(stopBtn);
+      pnlCntrols.add(toggleTimerBtn);
       pnlCntrols.add(endGameBtn);
       
       // play Area
@@ -556,6 +666,11 @@ class GameView extends JFrame
       this.setSize(800, 600);
       this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
       this.setVisible(true);
+   }
+   
+   public ClockTimer getTimer()
+   {
+      return timer;
    }
    
    public void updatePlayedStacks(Hand leftStack, Hand rightStack)
@@ -690,6 +805,21 @@ class GameView extends JFrame
    {
       cantPlayBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
       cantPlayBtn.addActionListener(l);
+   }
+   
+   public void toggleTimerListener(ActionListener l)
+   {
+      toggleTimerBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+      toggleTimerBtn.addActionListener(l);
+   }
+   
+   public boolean setTimerButtonText(String text)
+   {
+      if(text == null)
+         return false;
+      
+      toggleTimerBtn.setText(text);
+      return true;
    }
    
 }

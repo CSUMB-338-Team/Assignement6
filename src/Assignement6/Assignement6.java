@@ -5,6 +5,8 @@ import java.awt.Cursor;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -87,12 +89,15 @@ class ClockTimer extends JLabel
    
    private class StopWatch extends Thread
    {
-      private long start = System.currentTimeMillis();
+      private long startTime;
+      private long cachedTime;
       private boolean pauseTimer;
       
       public StopWatch()
       {
          pauseTimer = false;
+         startTime = System.currentTimeMillis();
+         cachedTime = 0;
       }
       
       @Override
@@ -100,35 +105,37 @@ class ClockTimer extends JLabel
       {
          while(true){
             
-            long currentTime = timerPaused();
-                        
-            long time = currentTime - start;
+            long time = timerPaused();
+            
             long sec = time / 1000 ;
             long min = sec / 60;
             sec = sec % 60;
+
             text = String.format("%02d:%02d", min , sec );
             addText(text);
          }
       }
+   
       
       public long timerPaused()
       {
-         // cache the time
+    
          long time = System.currentTimeMillis();
          
          while(pauseTimer){
-            doNothing(1);
+            doNothing(0);
+            cachedTime = System.currentTimeMillis() - time;
          }
          
-         return time;
+         return time - startTime - cachedTime;
       }
       
-      public void toggleTimer()
+      private void toggleTimer()
       {
          pauseTimer = !pauseTimer;
       }
       
-      public void doNothing(int millis)
+      private void doNothing(int millis)
       {
          try
          {

@@ -1,3 +1,15 @@
+/*
+ * 
+ * 
+ * Team: Matt Bozelka, Jeremy Fransen, Rahel Tilahun
+ * Assignment 6
+ * 
+ * Explores the use of an MVC patter, as well as creating
+ * a timer by utilizing multithreading 
+ * 
+ * 
+ * */
+
 package Assignement6;
 
 import java.awt.BorderLayout;
@@ -5,8 +17,6 @@ import java.awt.Cursor;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -58,6 +68,11 @@ public class Assignement6
 /*------------------------------------------------------
  * Timer
  *---------------------------------------------------- */
+
+/*
+ * clock timer for the game. Extends JLabel so it is easy to include
+ * into the GUI
+ * */
 class ClockTimer extends JLabel
 {
    private StopWatch stopWatch;
@@ -70,6 +85,9 @@ class ClockTimer extends JLabel
       stopWatch = null;
    }
    
+   /*
+    * public method to help kick off the new Thread (private inner class)
+    * */
    public void startTimer()
    {
       stopWatch = new StopWatch();
@@ -77,16 +95,28 @@ class ClockTimer extends JLabel
       t.start();
    }
    
+   /*
+    * helper method for the thread to update the JLable text.
+    * Takes a String that represents what will be shown.
+    * */
    public void addText(String text) 
    {
       this.setText(text);
    }
    
+   /*
+    * helper method, that outside classes can call to toglle the timer
+    * from a paused state to a play state
+    * */
    public void toggleTimer() 
    {
       stopWatch.toggleTimer();
    }
    
+   /*
+    * inner private class that starts a new thread to create 
+    * a timer for the game
+    * */
    private class StopWatch extends Thread
    {
       private long startTime;
@@ -116,10 +146,13 @@ class ClockTimer extends JLabel
          }
       }
    
-      
-      public long timerPaused()
+      /*
+       * private helper to handle pausing the timer
+       * as well as keeping track of elapsed time.
+       * */
+      private long timerPaused()
       {
-    
+         
          long time = System.currentTimeMillis();
          
          while(pauseTimer){
@@ -130,11 +163,19 @@ class ClockTimer extends JLabel
          return time - startTime - cachedTime;
       }
       
+      /*
+       * private helper to toggle the pause attribute of
+       * the timer
+       * */
       private void toggleTimer()
       {
          pauseTimer = !pauseTimer;
       }
       
+      /*
+       * a call to doNothing puts the timer to sleep for
+       * x amount of milliseconds
+       * */
       private void doNothing(int millis)
       {
          try
@@ -159,14 +200,17 @@ class ClockTimer extends JLabel
  * class GameModel
  *---------------------------------------------------- */
 
+/*
+ * holds all the data and information needed to play the game
+ * getter and setter methods where needed to update and
+ * retrieve required data
+ * */
 class GameModel
 {
    private CardGameFramework highCardGame;
    private int cpuPlayer, humanPlayer;
    private int cpuCantPlay, humanCantPlay;
    private String cpuName, humanName;
-   private int firstPlayer;
-   private Card cpuPlayedCard, humanPlayedCard;
    private Hand leftStack, rightStack;
    
    public GameModel()
@@ -180,10 +224,12 @@ class GameModel
       humanCantPlay = 0;
       leftStack = new Hand();
       rightStack = new Hand();
-      cpuPlayedCard = null;
-      humanPlayedCard = null;
    }
    
+   /*
+    * Non default, expects a CardGameFrameWork, and the name for the
+    * Computer and the player
+    * */
    public GameModel(CardGameFramework highCardGame, String cpuName, 
          String humanName)
    {
@@ -196,131 +242,144 @@ class GameModel
       humanCantPlay = 0;
       leftStack = new Hand();
       rightStack = new Hand();
-      cpuPlayedCard = null;
-      humanPlayedCard = null;
    }
    
+   /*
+    * public helper method to play a card. It takes the player index
+    * and the card index
+    * */
    public Card playCard(int playerIndex, int cardIndex)
    {
       return highCardGame.playCard(playerIndex, cardIndex);
    }
    
-   public boolean takeNewCard(int playerIndex, int cardIndex)
+   /*
+    * public helper method to take a new card from the deck. Takes a player
+    * index
+    * */
+   public boolean takeNewCard(int playerIndex)
    {
-      return highCardGame.takeCard(playerIndex, cardIndex);
+      return highCardGame.takeCard(playerIndex);
    }
    
-   public void resetGame()
+   /*
+    * deals a single card to a specified hand.
+    * Mainly used to update the two center hands that represent
+    * played cards
+    * */
+   public boolean dealSingleCard(Hand hand)
    {
-   }
-   
-   public void dealSingleCard(Hand hand)
-   {
+      if(hand == null)
+         return false;
+      
       Card card = highCardGame.getCardFromDeck();
+      
+      if(card == null)
+         return false;
+      
       hand.takeCard(card);
+      
+      return true;
    }
    
+   /*
+    * helper method to deal and sort the hands at the 
+    * beginning of the game
+    * */
    public void dealCards()
    {
       highCardGame.deal();
       highCardGame.sortHands();
    }
    
+   /*
+    * returns the left stack of played cards.
+    * */
    public Hand getLeftPlayedStack()
    {
       return leftStack;
    }
    
+   /*
+    * returns the right stack of played cards.
+    * */
    public Hand getRightPlayedStack()
    {
       return rightStack;
    }
    
+   /*
+    * returns the cpu hand
+    * */
    public Hand getCpuHand()
    {
       return highCardGame.getHand(cpuPlayer);
    }
    
+   /*
+    * returns the number of times the CPU could not play
+    * */
    public int getCpuCantPlay()
    {
       return cpuCantPlay;
    }
    
+   /*
+    * increases the number of times the CPU could not play
+    * */
    public boolean setCpuCantPlay()
    {
       cpuCantPlay++;
       return true;
    }
    
+   /*
+    * returns the player hand
+    * */
    public Hand getHumanHand()
    {
       return highCardGame.getHand(humanPlayer);
    }
    
+   /*
+    * returns the number of times the Player could not play
+    * */
    public int getHumanCantPlay()
    {
       return humanCantPlay;
    }
    
+   /*
+    * increases the number of times the Player could not play
+    * */
    public boolean setHumanCantPlay()
    {
       humanCantPlay++;
       return true;
    }
    
+   /*
+    * a cached max number of cards a player can have for the game
+    * */
    public int getNumCardsPerHand()
    {
       return highCardGame.geNumCardsPerHand();
    }
    
-   public boolean setFirstPlayer(int playerIndex)
-   {
-      
-      firstPlayer = playerIndex;
-      return true;
-   }
-   
-   public int getFirstPlayer()
-   {     
-      return firstPlayer;
-   }
-   
+   /*
+    * returns name of cpu
+    * */
    public String getCpuName()
    {
       return cpuName;
    }
    
+   /*
+    * returns name of player
+    * */
    public String getHumanName()
    {
       return humanName;
-   }
-   
-   public Card getHumanPlayedCard()
-   {
-      return humanPlayedCard;
-   }
-   
-   public boolean setHumanPlayedCard(Card card)
-   {
-      if(card == null)
-         return false;
-      
-      humanPlayedCard = new Card(card.getValue(), card.getSuit());
-      return true;
-   }
-   
-   public Card getCpuPlayedCard()
-   {
-      return cpuPlayedCard;
-   }
-   
-   public boolean setCpuPlayedCard(Card card)
-   {
-      if(card == null)
-         return false;
-      
-      cpuPlayedCard = new Card(card.getValue(), card.getSuit());
-      return true;
    }
 }
 
@@ -332,6 +391,12 @@ class GameModel
  * class GameController
  *---------------------------------------------------- */
 
+/*
+ * Controller handles getting the data from the view, and updated the model,
+ * it also grabs the data from the model to set and update the view.
+ * Does most of the heavy lifting in computation before updating the models
+ * data
+ * */
 class GameControl
 {
    GameModel model;
@@ -366,6 +431,10 @@ class GameControl
             "cards.\nIf you can't play press the \"Can't Play\" button.");
    }
    
+   /*
+    * evaluates when the game is over
+    * then updates the view with the correct data
+    * */
    private void gameOver()
    {
       int playerScore = model.getHumanCantPlay();
@@ -387,6 +456,9 @@ class GameControl
       System.exit(0);
    }
    
+   /*
+    * when it is the cpu turn, evaluates and updated model and view
+    * */
    private void cpuTurn()
    {
       if(noPlayRounds == 2)
@@ -402,6 +474,9 @@ class GameControl
       cpuPlay();
    }
    
+   /*
+    * when it is the players turn, evaluates and updated model and view
+    * */
    private void playersTurn()
    {
 
@@ -420,21 +495,37 @@ class GameControl
   
    }
    
+   /*
+    * no cards could be played so places 2 new cards from
+    * the deck into the center.
+    * */
    private void placeNewCardsCenter()
    {
      
+      boolean hasCards = true;
       noPlayRounds = 0;
       
       Hand left = model.getLeftPlayedStack();
       Hand right = model.getRightPlayedStack();
       
-      model.dealSingleCard(left);
-      model.dealSingleCard(right);
+      hasCards = model.dealSingleCard(left);
+      
+      if(!hasCards)
+         gameOver();
+      
+      hasCards = model.dealSingleCard(right);
+      
+      if(!hasCards)
+         gameOver();
       
       view.updatePlayedStacks(model.getLeftPlayedStack(), 
             model.getRightPlayedStack());
    }
    
+   /*
+    * the evaluation of a card played. Must be 1 higher or 1 lower
+    * than one of the cards on either center stack
+    * */
    private Hand evaluatePlay(Card toEvaluate)
    {
       Hand lHand = model.getLeftPlayedStack();
@@ -459,6 +550,9 @@ class GameControl
       return null;
    }
    
+   /*
+    * evaluates if and what the CPU can play
+    * */
    private void cpuPlay()
    {
       Hand cHand = model.getCpuHand();
@@ -476,7 +570,7 @@ class GameControl
             noPlayRounds = 0;
             cardToPlay = model.playCard(0, i);
             handToPlayOn.takeCard(cardToPlay);
-            cardsLeftInDeck = model.takeNewCard(0, i);
+            cardsLeftInDeck = model.takeNewCard(0);
             view.updatePlayedStacks(model.getLeftPlayedStack(), 
                   model.getRightPlayedStack());
             break;
@@ -543,6 +637,7 @@ class GameControl
       
    }
    
+   //  can't play listener
    private class CantPlayListener implements ActionListener
    {
       
@@ -556,6 +651,7 @@ class GameControl
       
    }
    
+   // listener for each of the players cards
    private class PlayCardControlListener implements ActionListener
    {
       
@@ -586,7 +682,7 @@ class GameControl
             noPlayRounds = 0;
             cardToPlay = model.playCard(1, index);
             handToPlayOn.takeCard(cardToPlay);
-            cardsLeftInDeck = model.takeNewCard(1, index);
+            cardsLeftInDeck = model.takeNewCard(1);
             view.updatePlayedStacks(model.getLeftPlayedStack(), 
                   model.getRightPlayedStack());
             
@@ -613,8 +709,16 @@ class GameControl
  * class GameView
  *---------------------------------------------------- */
 
+/*
+ * game view. Does nothing but supply the markup for how a screen
+ * or view should look. It takes all its parameters from the Controll
+ * in order to get the data to show
+ * */
 class GameView extends JFrame
 {
+   
+   // added because eclipse suggested it.
+   private static final long serialVersionUID = 1L;
 
    private ClockTimer timer;
    
@@ -630,7 +734,7 @@ class GameView extends JFrame
    private JPanel pnlCpuHand, pnlHumanHand, pnlPlayArea, pnlCntrols;
    
    // sub pannels
-   private JPanel pnlTimer, pnlOutput;
+   private JPanel pnlTimer;
    
    // default constructor
    // sets up the initial view, which is really
@@ -683,11 +787,16 @@ class GameView extends JFrame
       this.setVisible(true);
    }
    
+   // public method to return the timer object (which is a JLable)
+   // used by the controller to pause and play
    public ClockTimer getTimer()
    {
       return timer;
    }
    
+   /*
+    * updates the views played stack
+    * */
    public void updatePlayedStacks(Hand leftStack, Hand rightStack)
    {
       
@@ -702,6 +811,9 @@ class GameView extends JFrame
       rePaintUI();
    }
    
+   /*
+    * updates the board to reflect it is the CPU turn
+    * */
    public void updateForCpuTurn(Hand cpuHand, Hand humanHand, int maxHandSize)
    {
       pnlCpuHand.removeAll();
@@ -711,6 +823,9 @@ class GameView extends JFrame
       rePaintUI();
    }
    
+   /*
+    * updates the board to reflect it is the Players turn
+    * */
    public void updateForPlayersTurn(Hand cpuHand, Hand humanHand, 
          int maxHandSize)
    {
@@ -721,6 +836,9 @@ class GameView extends JFrame
       rePaintUI();
    }
    
+   /*
+    * private helper to add the CPUs hand to the table
+    * */
    private void addCpuHand(Hand hand, int maxHandSize)
    {  
       
@@ -734,6 +852,9 @@ class GameView extends JFrame
       
    }
    
+   /*
+    * private helper to add the players hand to the table
+    * */
    private void addHumanHand(Hand hand, int maxHandSize)
    {
       
@@ -747,6 +868,10 @@ class GameView extends JFrame
       }
    }
    
+   /*
+    * private helper to add the players hand to the table
+    * as a set of buttons (used when players turn)
+    * */
    private void addHumanHandAsButtons(Hand hand, int maxHandSize)
    {     
       playersCardsBtns.clear();
@@ -780,6 +905,9 @@ class GameView extends JFrame
       this.getContentPane().repaint();
    }
 
+   /*
+    * shows a message to the player
+    * */
    public void showMessageg(String title, String message)
    {  
       JOptionPane.showMessageDialog(
@@ -789,6 +917,9 @@ class GameView extends JFrame
             JOptionPane.PLAIN_MESSAGE);
    }
    
+   /*
+    * shows a dialog to the player, with options to select from
+    * */
    public int showOptionDialog(String title, String message, String[] options)
    {  
       int option = JOptionPane.showOptionDialog(
@@ -804,30 +935,45 @@ class GameView extends JFrame
       return option;
    }
    
+   /*
+    * methods to get the endGameButton to supply an action listener
+    * */
    public void endActionListener(ActionListener l)
    {
       endGameBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
       endGameBtn.addActionListener(l);
    }
    
+   /*
+    * methods to get the playersCardsBtn to supply an action listener
+    * */
    public void playersCardActionListener(int index, ActionListener l)
    {
       playersCardsBtns.get(index).setCursor(new Cursor(Cursor.HAND_CURSOR));
       playersCardsBtns.get(index).addActionListener(l);
    }
    
+   /*
+    * methods to get the cantPlayBtn to supply an action listener
+    * */
    public void cantPlayListener(ActionListener l)
    {
       cantPlayBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
       cantPlayBtn.addActionListener(l);
    }
    
+   /*
+    * methods to get the toggleTimerBtn to supply an action listener
+    * */
    public void toggleTimerListener(ActionListener l)
    {
       toggleTimerBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
       toggleTimerBtn.addActionListener(l);
    }
    
+   /*
+    * methods to set the timer buttons text
+    * */
    public boolean setTimerButtonText(String text)
    {
       if(text == null)
@@ -1648,14 +1794,11 @@ class CardGameFramework
    }
    
    
-   public boolean takeCard(int playerIndex, int cardIndex)
+   public boolean takeCard(int playerIndex)
    {
       // returns false if either argument is bad
-      if (playerIndex < 0 ||  playerIndex > numPlayers - 1 ||
-          cardIndex < 0 || cardIndex > numCardsPerHand - 1)
-      {
-         return false;      
-      }
+      if (playerIndex < 0 || playerIndex > numPlayers - 1)
+         return false; 
            
       // Are there enough Cards?
       if (deck.getNumCards() <= 0)
